@@ -1,7 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone', // Optional: Helps with Vercel deployment
+  experimental: {}, // Make sure this is empty
+  trailingSlash: false,
+  output: "standalone", // Ensures correct file serving on Vercel
 };
 
 module.exports = nextConfig;
