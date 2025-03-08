@@ -1,3 +1,4 @@
+"use client"
 import React from "react";
 import { Instagram, Facebook, Twitter } from "lucide-react";
 import { motion } from "framer-motion";
