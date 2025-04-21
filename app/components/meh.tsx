@@ -20,24 +20,34 @@ const columns = [
   { title: 'Team', field: 'team', sorter: 'string', headerFilter: 'input' },
 ];
 
-const data = Array.from({ length: 100 }, (_, i) => ({
-  employee_id: i + 1,
-  employee_name: `Employee ${i + 1}`,
-  global_career_band: 3,
-  cost_center: 'GAC GRA STRATEGIC PROJECTS (HDPI_4617518413)',
-  work_location_name: 'Kolkata, Hexagon House',
-  functional_manager_employee_name: 'Sonya Louise Swallow',
-  team: 'Other',
-}));
+// Just 2 sample records
+const data = [
+  {
+    employee_id: 1,
+    employee_name: 'Francis Xavier',
+    global_career_band: 3,
+    cost_center: 'GAC GRA STRATEGIC PROJECTS (HDPI_4617518413)',
+    work_location_name: 'Kolkata, Hexagon House',
+    functional_manager_employee_name: 'Sonya Louise Swallow',
+    team: 'Other',
+  },
+  {
+    employee_id: 2,
+    employee_name: 'Maria Dsouza',
+    global_career_band: 4,
+    cost_center: 'GAC GRA ANALYTICS TEAM (HDPI_4617518425)',
+    work_location_name: 'Hyderabad, Innovate Tower',
+    functional_manager_employee_name: 'Jonathan Blake',
+    team: 'Analytics',
+  },
+];
 
 function EmployeeTable() {
   const tableRef = useRef<any>(null);
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopy = () => {
-    if (tableRef.current?.table) {
-      tableRef.current.table.copyToClipboard();
-    }
+    tableRef.current?.table?.copyToClipboard();
   };
 
   const handleDownloadCSV = () => {
@@ -62,9 +72,9 @@ function EmployeeTable() {
 
   const handleDownloadPDF = async () => {
     if (!tableContainerRef.current) return;
-
     const canvas = await html2canvas(tableContainerRef.current, { scale: 2 });
     const imgData = canvas.toDataURL('image/png');
+
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
@@ -88,9 +98,7 @@ function EmployeeTable() {
   };
 
   const handlePrint = () => {
-    if (tableRef.current?.table) {
-      tableRef.current.table.print(false, true);
-    }
+    tableRef.current?.table?.print(false, true);
   };
 
   return (
