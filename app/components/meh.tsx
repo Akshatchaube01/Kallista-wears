@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ReactTabulator } from 'react-tabulator';
+import type { Tabulator } from 'tabulator-tables';
 import 'react-tabulator/lib/styles.css';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import 'tabulator-tables/dist/js/tabulator.min.js';
@@ -38,57 +39,56 @@ const data = [
 ];
 
 function EmployeeTable() {
-  const tableRef = useRef(null);
+  const tableRef = useRef<Tabulator | null>(null);
 
   const handleCopy = () => {
-    if (tableRef.current) {
-      tableRef.current.table.copyToClipboard();
-    }
+    tableRef.current?.copyToClipboard();
   };
 
-  const handleDownload = (type) => {
+  const handleDownload = (type: string) => {
     if (!tableRef.current) return;
-    const table = tableRef.current.table;
-    if (type === 'csv') table.download('csv', 'employee_data.csv');
-    if (type === 'xlsx') table.download('xlsx', 'employee_data.xlsx', { sheetName: 'Employees' });
+    if (type === 'csv') tableRef.current.download('csv', 'employee_data.csv');
+    if (type === 'xlsx') tableRef.current.download('xlsx', 'employee_data.xlsx', { sheetName: 'Employees' });
     if (type === 'pdf')
-      table.download('pdf', 'employee_data.pdf', {
+      tableRef.current.download('pdf', 'employee_data.pdf', {
         orientation: 'portrait',
         title: 'Employee Table',
       });
-    if (type === 'print') table.print(false, true);
+    if (type === 'print') tableRef.current.print(false, true);
   };
 
   return (
-    <div className='p-4'>
-      <div className='mb-4 flex gap-4 flex-wrap'>
-        <button onClick={handleCopy} className='px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition'>
+    <div className="p-4">
+      <div className="mb-4 flex gap-4 flex-wrap">
+        <button onClick={handleCopy} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
           Copy
         </button>
-        <button onClick={() => handleDownload('csv')} className='px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition'>
+        <button onClick={() => handleDownload('csv')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
           Download CSV
         </button>
-        <button onClick={() => handleDownload('xlsx')} className='px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition'>
+        <button onClick={() => handleDownload('xlsx')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
           Download Excel
         </button>
-        <button onClick={() => handleDownload('pdf')} className='px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition'>
+        <button onClick={() => handleDownload('pdf')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
           Download PDF
         </button>
-        <button onClick={() => handleDownload('print')} className='px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition'>
+        <button onClick={() => handleDownload('print')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
           Print
         </button>
       </div>
 
       <ReactTabulator
-        ref={tableRef}
         columns={columns}
         data={data}
-        layout='fitColumns'
+        layout="fitColumns"
         options={{
           movableColumns: true,
           pagination: true,
           paginationSize: 20,
           clipboard: true,
+        }}
+        ref={(ref) => {
+          if (ref) tableRef.current = ref.table;
         }}
       />
     </div>
