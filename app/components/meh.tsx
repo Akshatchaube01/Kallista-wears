@@ -58,8 +58,19 @@ function EmployeeTable() {
   const tableRef = useRef<any>(null);
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const handleCopy = () => {
-    tableRef.current?.table?.copyToClipboard();
+  const handleCopy = async () => {
+    const headers = columns.map((col) => col.title).join('\t');
+    const rows = data.map((row) =>
+      columns.map((col) => String(row[col.field])).join('\t')
+    );
+    const text = [headers, ...rows].join('\n');
+    try {
+      await navigator.clipboard.writeText(text);
+      alert('Table copied to clipboard!');
+    } catch (err) {
+      console.error('Copy failed', err);
+      alert('Failed to copy table.');
+    }
   };
 
   const handleDownloadCSV = () => {
@@ -110,7 +121,34 @@ function EmployeeTable() {
   };
 
   const handlePrint = () => {
-    tableRef.current?.table?.print(false, true);
+    if (!tableContainerRef.current) return;
+
+    const tableHTML = tableContainerRef.current.innerHTML;
+    const printWindow = window.open('', '', 'width=800,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Print Table</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+            </style>
+          </head>
+          <body>
+            <h2>Employee Table</h2>
+            ${tableHTML}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
+    }
   };
 
   return (
