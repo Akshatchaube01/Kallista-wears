@@ -3,6 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ReactTabulator } from 'react-tabulator';
 import type { Tabulator } from 'tabulator-tables';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 import 'react-tabulator/lib/styles.css';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import 'tabulator-tables/dist/js/tabulator.min.js';
@@ -40,6 +43,7 @@ const data = [
 
 function EmployeeTable() {
   const tableRef = useRef<Tabulator | null>(null);
+  const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopy = () => {
     tableRef.current?.copyToClipboard();
@@ -49,12 +53,18 @@ function EmployeeTable() {
     if (!tableRef.current) return;
     if (type === 'csv') tableRef.current.download('csv', 'employee_data.csv');
     if (type === 'xlsx') tableRef.current.download('xlsx', 'employee_data.xlsx', { sheetName: 'Employees' });
-    if (type === 'pdf')
-      tableRef.current.download('pdf', 'employee_data.pdf', {
-        orientation: 'portrait',
-        title: 'Employee Table',
-      });
     if (type === 'print') tableRef.current.print(false, true);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!tableContainerRef.current) return;
+    const canvas = await html2canvas(tableContainerRef.current);
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const width = 210;
+    const height = (canvas.height * width) / canvas.width;
+    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    pdf.save('employee_table.pdf');
   };
 
   return (
@@ -69,7 +79,7 @@ function EmployeeTable() {
         <button onClick={() => handleDownload('xlsx')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
           Download Excel
         </button>
-        <button onClick={() => handleDownload('pdf')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
+        <button onClick={handleDownloadPDF} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
           Download PDF
         </button>
         <button onClick={() => handleDownload('print')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
@@ -77,20 +87,22 @@ function EmployeeTable() {
         </button>
       </div>
 
-      <ReactTabulator
-        columns={columns}
-        data={data}
-        layout="fitColumns"
-        options={{
-          movableColumns: true,
-          pagination: true,
-          paginationSize: 20,
-          clipboard: true,
-        }}
-        ref={(ref) => {
-          if (ref) tableRef.current = ref.table;
-        }}
-      />
+      <div ref={tableContainerRef}>
+        <ReactTabulator
+          columns={columns}
+          data={data}
+          layout="fitColumns"
+          options={{
+            movableColumns: true,
+            pagination: true,
+            paginationSize: 20,
+            clipboard: true,
+          }}
+          ref={(ref) => {
+            if (ref) tableRef.current = ref.table;
+          }}
+        />
+      </div>
     </div>
   );
 }
