@@ -2,9 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { ReactTabulator } from 'react-tabulator';
-import type { Tabulator } from 'tabulator-tables';
-import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 import 'react-tabulator/lib/styles.css';
 import 'tabulator-tables/dist/css/tabulator.min.css';
@@ -20,50 +19,59 @@ const columns = [
   { title: 'Team', field: 'team', sorter: 'string', headerFilter: 'input' },
 ];
 
-const data = [
-  {
-    employee_id: 1,
-    employee_name: 'Francis',
-    global_career_band: 3,
-    cost_center: 'GAC GRA STRATEGIC PROJECTS (HDPI_4617518413)',
-    work_location_name: 'Kolkata, Hexagon House',
-    functional_manager_employee_name: 'Sonya Louise Swallow',
-    team: 'Other',
-  },
-  {
-    employee_id: 2,
-    employee_name: 'Francis',
-    global_career_band: 3,
-    cost_center: 'GAC GRA STRATEGIC PROJECTS (HDPI_4617518413)',
-    work_location_name: 'Kolkata, Hexagon House',
-    functional_manager_employee_name: 'Sonya Louise Swallow',
-    team: 'Other',
-  },
-];
+const data = Array.from({ length: 100 }, (_, i) => ({
+  employee_id: i + 1,
+  employee_name: `Employee ${i + 1}`,
+  global_career_band: 3,
+  cost_center: 'GAC GRA STRATEGIC PROJECTS (HDPI_4617518413)',
+  work_location_name: 'Kolkata, Hexagon House',
+  functional_manager_employee_name: 'Sonya Louise Swallow',
+  team: 'Other',
+}));
 
 function EmployeeTable() {
-  const tableRef = useRef<Tabulator | null>(null);
+  const tableRef = useRef<any>(null);
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopy = () => {
-    tableRef.current?.copyToClipboard();
+    if (tableRef.current && tableRef.current.table) {
+      tableRef.current.table.copyToClipboard();
+    }
   };
 
   const handleDownload = (type: string) => {
-    if (!tableRef.current) return;
-    if (type === 'csv') tableRef.current.download('csv', 'employee_data.csv');
-    if (type === 'xlsx') tableRef.current.download('xlsx', 'employee_data.xlsx', { sheetName: 'Employees' });
-    if (type === 'print') tableRef.current.print(false, true);
+    if (!tableRef.current || !tableRef.current.table) return;
+    const tab = tableRef.current.table;
+    if (type === 'csv') tab.download('csv', 'employee_data.csv');
+    if (type === 'xlsx') tab.download('xlsx', 'employee_data.xlsx', { sheetName: 'Employees' });
+    if (type === 'print') tab.print(false, true);
   };
 
   const handleDownloadPDF = async () => {
     if (!tableContainerRef.current) return;
-    const canvas = await html2canvas(tableContainerRef.current);
+    const canvas = await html2canvas(tableContainerRef.current, { scale: 2 });
     const imgData = canvas.toDataURL('image/png');
+
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const width = 210;
-    const height = (canvas.height * width) / canvas.width;
-    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
     pdf.save('employee_table.pdf');
   };
 
@@ -89,17 +97,14 @@ function EmployeeTable() {
 
       <div ref={tableContainerRef}>
         <ReactTabulator
+          ref={tableRef}
           columns={columns}
           data={data}
           layout="fitColumns"
           options={{
             movableColumns: true,
-            pagination: true,
-            paginationSize: 20,
+            pagination: false, // Ensure full table is rendered for export
             clipboard: true,
-          }}
-          ref={(ref) => {
-            if (ref) tableRef.current = ref.table;
           }}
         />
       </div>
@@ -109,12 +114,9 @@ function EmployeeTable() {
 
 export default function EmployeeTablePage() {
   const [isClient, setIsClient] = useState(false);
-
   useEffect(() => {
     setIsClient(true);
   }, []);
-
   if (!isClient) return null;
-
   return <EmployeeTable />;
 }
