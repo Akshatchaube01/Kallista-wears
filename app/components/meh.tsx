@@ -1,9 +1,27 @@
 const handleDownloadPDF = async () => {
   if (!tableContainerRef.current) return;
 
-  const canvas = await html2canvas(tableContainerRef.current, { scale: 2 });
-  const imgData = canvas.toDataURL('image/png');
+  // Clone the table into a clean container without scrollbars
+  const clone = tableContainerRef.current.cloneNode(true) as HTMLElement;
+  clone.style.width = 'auto';
+  clone.style.overflow = 'visible';
+  clone.style.maxWidth = '100%';
 
+  const wrapper = document.createElement('div');
+  wrapper.style.padding = '20px';
+  wrapper.style.background = '#fff';
+  wrapper.style.width = 'fit-content';
+  wrapper.appendChild(clone);
+
+  document.body.appendChild(wrapper);
+
+  const canvas = await html2canvas(wrapper, {
+    scale: 2,
+    useCORS: true,
+    scrollY: 0,
+  });
+
+  const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF('p', 'mm', 'a4');
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
@@ -11,11 +29,10 @@ const handleDownloadPDF = async () => {
   const imgWidth = pageWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  // Add heading
+  // Add title
   pdf.setFontSize(16);
   pdf.text('Employee Table', 15, 20);
 
-  // Image placement after heading (20px margin)
   const startY = 30;
   pdf.addImage(imgData, 'PNG', 0, startY, imgWidth, imgHeight);
 
@@ -30,36 +47,6 @@ const handleDownloadPDF = async () => {
   }
 
   pdf.save('employee_table.pdf');
-};
 
-
-const handlePrint = () => {
-  if (!tableContainerRef.current) return;
-
-  const tableHTML = tableContainerRef.current.innerHTML;
-  const printWindow = window.open('', '', 'width=800,height=600');
-  if (printWindow) {
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Print Table</title>
-          <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.4.4/dist/css/tabulator.min.css">
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            h2 { margin-bottom: 20px; }
-          </style>
-        </head>
-        <body>
-          <h2>Employee Table</h2>
-          ${tableHTML}
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 600);
-  }
+  document.body.removeChild(wrapper); // Clean up
 };
