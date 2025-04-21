@@ -1,7 +1,7 @@
-const handleDownloadPDF = async () => {
+const handlePrint = () => {
   if (!tableContainerRef.current) return;
 
-  // Clone the table into a clean container without scrollbars
+  // Clone the table to avoid capturing scrollbars
   const clone = tableContainerRef.current.cloneNode(true) as HTMLElement;
   clone.style.width = 'auto';
   clone.style.overflow = 'visible';
@@ -13,40 +13,42 @@ const handleDownloadPDF = async () => {
   wrapper.style.width = 'fit-content';
   wrapper.appendChild(clone);
 
-  document.body.appendChild(wrapper);
-
-  const canvas = await html2canvas(wrapper, {
-    scale: 2,
-    useCORS: true,
-    scrollY: 0,
-  });
-
-  const imgData = canvas.toDataURL('image/png');
-  const pdf = new jsPDF('p', 'mm', 'a4');
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
-
-  const imgWidth = pageWidth;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-  // Add title
-  pdf.setFontSize(16);
-  pdf.text('Employee Table', 15, 20);
-
-  const startY = 30;
-  pdf.addImage(imgData, 'PNG', 0, startY, imgWidth, imgHeight);
-
-  let heightLeft = imgHeight - (pageHeight - startY);
-  let position = startY - imgHeight;
-
-  while (heightLeft > 0) {
-    pdf.addPage();
-    position = heightLeft - imgHeight;
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+  // Build HTML for printing
+  const printWindow = window.open('', '', 'width=1200,height=800');
+  if (printWindow) {
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>Print Table</title>
+          <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.4.4/dist/css/tabulator.min.css">
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              background: #fff;
+              padding: 20px;
+            }
+            h2 {
+              margin-bottom: 20px;
+              font-size: 20px;
+            }
+            .tabulator {
+              width: 100% !important;
+              max-width: 100% !important;
+              overflow: visible !important;
+            }
+          </style>
+        </head>
+        <body>
+          <h2>Employee Table</h2>
+          ${wrapper.innerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   }
-
-  pdf.save('employee_table.pdf');
-
-  document.body.removeChild(wrapper); // Clean up
 };
