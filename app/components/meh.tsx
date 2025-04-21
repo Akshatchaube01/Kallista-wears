@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ReactTabulator } from 'react-tabulator';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 import 'react-tabulator/lib/styles.css';
 import 'tabulator-tables/dist/css/tabulator.min.css';
@@ -34,28 +35,39 @@ function EmployeeTable() {
   const tableContainerRef = useRef<HTMLDivElement | null>(null);
 
   const handleCopy = () => {
-    if (tableRef.current && tableRef.current.table) {
+    if (tableRef.current?.table) {
       tableRef.current.table.copyToClipboard();
     }
   };
 
-  const handleDownload = (type: string) => {
-    if (!tableRef.current || !tableRef.current.table) return;
-    const tab = tableRef.current.table;
-    if (type === 'csv') tab.download('csv', 'employee_data.csv');
-    if (type === 'xlsx') tab.download('xlsx', 'employee_data.xlsx', { sheetName: 'Employees' });
-    if (type === 'print') tab.print(false, true);
+  const handleDownloadCSV = () => {
+    const headers = columns.map((col) => col.title).join(',');
+    const rows = data.map((row) =>
+      columns.map((col) => JSON.stringify(row[col.field] ?? '')).join(',')
+    );
+    const csvContent = [headers, ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'employee_data.csv';
+    link.click();
+  };
+
+  const handleDownloadExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Employees');
+    XLSX.writeFile(workbook, 'employee_data.xlsx');
   };
 
   const handleDownloadPDF = async () => {
     if (!tableContainerRef.current) return;
+
     const canvas = await html2canvas(tableContainerRef.current, { scale: 2 });
     const imgData = canvas.toDataURL('image/png');
-
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-
     const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
@@ -75,24 +87,20 @@ function EmployeeTable() {
     pdf.save('employee_table.pdf');
   };
 
+  const handlePrint = () => {
+    if (tableRef.current?.table) {
+      tableRef.current.table.print(false, true);
+    }
+  };
+
   return (
     <div className="p-4">
       <div className="mb-4 flex gap-4 flex-wrap">
-        <button onClick={handleCopy} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
-          Copy
-        </button>
-        <button onClick={() => handleDownload('csv')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
-          Download CSV
-        </button>
-        <button onClick={() => handleDownload('xlsx')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
-          Download Excel
-        </button>
-        <button onClick={handleDownloadPDF} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
-          Download PDF
-        </button>
-        <button onClick={() => handleDownload('print')} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">
-          Print
-        </button>
+        <button onClick={handleCopy} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Copy</button>
+        <button onClick={handleDownloadCSV} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Download CSV</button>
+        <button onClick={handleDownloadExcel} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Download Excel</button>
+        <button onClick={handleDownloadPDF} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Download PDF</button>
+        <button onClick={handlePrint} className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition">Print</button>
       </div>
 
       <div ref={tableContainerRef}>
@@ -102,8 +110,9 @@ function EmployeeTable() {
           data={data}
           layout="fitColumns"
           options={{
+            pagination: true,
+            paginationSize: 10,
             movableColumns: true,
-            pagination: false, // Ensure full table is rendered for export
             clipboard: true,
           }}
         />
