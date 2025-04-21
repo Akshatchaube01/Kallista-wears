@@ -10,7 +10,19 @@ import 'react-tabulator/lib/styles.css';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import 'tabulator-tables/dist/js/tabulator.min.js';
 
-const columns = [
+// Step 1: Define type for a row
+type EmployeeRow = {
+  employee_id: number;
+  employee_name: string;
+  global_career_band: number;
+  cost_center: string;
+  work_location_name: string;
+  functional_manager_employee_name: string;
+  team: string;
+};
+
+// Step 2: Define columns with proper type
+const columns: { title: string; field: keyof EmployeeRow; sorter: string; headerFilter: string }[] = [
   { title: 'Employee ID', field: 'employee_id', sorter: 'number', headerFilter: 'input' },
   { title: 'Name', field: 'employee_name', sorter: 'string', headerFilter: 'input' },
   { title: 'GCD', field: 'global_career_band', sorter: 'number', headerFilter: 'input' },
@@ -20,8 +32,8 @@ const columns = [
   { title: 'Team', field: 'team', sorter: 'string', headerFilter: 'input' },
 ];
 
-// Just 2 sample records
-const data = [
+// Step 3: Sample data
+const data: EmployeeRow[] = [
   {
     employee_id: 1,
     employee_name: 'Francis Xavier',
@@ -53,7 +65,7 @@ function EmployeeTable() {
   const handleDownloadCSV = () => {
     const headers = columns.map((col) => col.title).join(',');
     const rows = data.map((row) =>
-      columns.map((col) => JSON.stringify(row[col.field] ?? '')).join(',')
+      columns.map((col) => JSON.stringify(row[col.field])).join(',')
     );
     const csvContent = [headers, ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
